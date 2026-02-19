@@ -191,9 +191,16 @@ class _GlobalTabState extends State<_GlobalTab> {
     setState(() => _loading = true);
     try {
       final data = await _service.getGlobal(days: 30, page: _page, perPage: 50);
-      final list = data['transaksi'] as List? ?? [];
-      _list = list.map((e) => Transaksi.fromJson(e)).toList();
-      _total = data['pagination']?['total'] ?? 0;
+      final rawList = data['transaksi'];
+      final list = rawList is List ? rawList : [];
+      _list = list
+          .whereType<Map<String, dynamic>>()
+          .map((e) => Transaksi.fromJson(e))
+          .toList();
+      final rawPagination = data['pagination'];
+      _total = (rawPagination is Map<String, dynamic>)
+          ? ((rawPagination['total'] is num) ? (rawPagination['total'] as num).toInt() : 0)
+          : 0;
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
     }
@@ -284,8 +291,27 @@ class _SelisihTabState extends State<_SelisihTab> {
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   ...d.entries
-                      .where((e) => e.key != 'shift_number' && e.key != 'shift_log_id')
-                      .map((e) => Text('${e.key}: ${e.value}', style: const TextStyle(fontSize: 12))),
+                      .where((e) => !const {
+                        'shift_number', 'shift_log_id', 'type', 'id',
+                        'created_at', 'updated_at', 'deleted_at',
+                      }.contains(e.key))
+                      .map((e) {
+                        final label = (e.key as String).replaceAll('_', ' ');
+                        final val = e.value;
+                        final display = val is num
+                            ? formatRupiah(val.toDouble())
+                            : '$val';
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              Text(display, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        );
+                      }),
                 ],
               ),
             ),

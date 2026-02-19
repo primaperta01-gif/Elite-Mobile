@@ -8,8 +8,13 @@ class TransaksiService {
     final resp = await _api.get('/transaksi/list', queryParams: {
       'shift_id': shiftId.toString(),
     });
-    final list = resp['data']?['transaksi'] as List? ?? [];
-    return list.map((e) => Transaksi.fromJson(e)).toList();
+    final rawData = resp['data'];
+    final rawList = (rawData is Map<String, dynamic>) ? rawData['transaksi'] : null;
+    final list = rawList is List ? rawList : [];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Transaksi.fromJson(e))
+        .toList();
   }
 
   Future<int> create(Transaksi trx) async {
@@ -36,6 +41,7 @@ class TransaksiService {
       if (dateTo != null) 'date_to': dateTo,
     };
     final resp = await _api.get('/transaksi/global', queryParams: params);
-    return resp['data'] ?? {};
+    final data = resp['data'];
+    return data is Map<String, dynamic> ? data : {};
   }
 }

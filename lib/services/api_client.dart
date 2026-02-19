@@ -123,8 +123,13 @@ class ApiClient {
   Map<String, dynamic> _handleResponse(http.Response resp) {
     Map<String, dynamic> body;
     try {
-      final decoded = jsonDecode(resp.body);
-      body = decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+      final trimmed = resp.body.trim();
+      if (trimmed.isEmpty) {
+        body = {};
+      } else {
+        final decoded = jsonDecode(trimmed);
+        body = decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+      }
     } on FormatException {
       throw ApiException(
         'Server error (${resp.statusCode}): Response bukan JSON',
@@ -132,6 +137,10 @@ class ApiClient {
       );
     }
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      if (body['success'] == false) {
+        final msg = body['error'] ?? body['message'] ?? 'Terjadi kesalahan';
+        throw ApiException(msg is String ? msg : msg.toString(), resp.statusCode);
+      }
       return body;
     }
     if (resp.statusCode == 401) {
