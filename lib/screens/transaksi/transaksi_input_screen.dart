@@ -77,7 +77,10 @@ class _TransaksiInputScreenState extends State<TransaksiInputScreen> {
     try {
       final shift = await _shiftService.getActiveShift();
       final shiftData = shift['shift'];
-      _activeShiftLogId = shiftData?['shift_log_id'];
+      if (shiftData is Map<String, dynamic>) {
+        final rawId = shiftData['shift_log_id'];
+        _activeShiftLogId = rawId is num ? rawId.toInt() : null;
+      }
 
       _products = await _masterService.getProducts(status: 'AKTIF');
       _resellers = await _masterService.getResellers();

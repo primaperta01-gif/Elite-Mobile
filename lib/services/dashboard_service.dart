@@ -7,17 +7,24 @@ class DashboardService {
 
   Future<DashboardSummary> getSummary() async {
     final resp = await _api.get('/dashboard/summary');
-    return DashboardSummary.fromJson(resp['data']);
+    final data = resp['data'];
+    return DashboardSummary.fromJson(data is Map<String, dynamic> ? data : {});
   }
 
   Future<Map<String, dynamic>> getShiftSummary() async {
     final resp = await _api.get('/dashboard/shift-summary');
-    return resp['data'] ?? {};
+    final data = resp['data'];
+    return data is Map<String, dynamic> ? data : {};
   }
 
   Future<List<Rekening>> getRekeningSummary() async {
     final resp = await _api.get('/dashboard/rekening-summary');
-    final list = resp['data']?['rekening'] as List? ?? [];
-    return list.map((e) => Rekening.fromJson(e)).toList();
+    final data = resp['data'];
+    final list = (data is Map<String, dynamic> ? data['rekening'] : null);
+    if (list is! List) return [];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Rekening.fromJson(e))
+        .toList();
   }
 }

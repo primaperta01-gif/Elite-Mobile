@@ -12,14 +12,22 @@ class AuthService {
       if (role != null && role.isNotEmpty) 'role': role,
     };
     final resp = await _api.post('/auth/login', body: body);
-    final result = AuthResult.fromJson(resp['data']);
+    final data = resp['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('Response login tidak valid', 500);
+    }
+    final result = AuthResult.fromJson(data);
     await _api.setTokens(result.accessToken, result.refreshToken);
     return result;
   }
 
   Future<User> getMe() async {
     final resp = await _api.get('/auth/me');
-    return User.fromJson(resp['data']);
+    final data = resp['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('Response profil tidak valid', 500);
+    }
+    return User.fromJson(data);
   }
 
   Future<void> logout() async {

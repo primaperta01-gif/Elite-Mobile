@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'config/theme.dart';
@@ -12,6 +13,11 @@ import 'screens/master/master_screen.dart';
 import 'screens/profile/profile_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   runApp(const EliteApp());
 }
 
@@ -20,23 +26,26 @@ class EliteApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-      ],
-      child: MaterialApp(
-        title: 'Elite Management',
-        theme: AppTheme.lightTheme,
-        debugShowCheckedModeBanner: false,
-        home: const SplashScreen(),
-        routes: {
-          '/login': (_) => const LoginScreen(),
-          '/dashboard': (_) => const DashboardScreen(),
-          '/transaksi': (_) => const TransaksiMenuScreen(),
-          '/shift': (_) => const ShiftScreen(),
-          '/laporan': (_) => const LaporanScreen(),
-          '/master': (_) => const MasterScreen(),
-          '/profile': (_) => const ProfileScreen(),
+    return ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
+      child: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          return MaterialApp(
+            title: 'Elite Management',
+            theme: AppTheme.lightTheme,
+            debugShowCheckedModeBanner: false,
+            navigatorKey: auth.navigatorKey,
+            home: const SplashScreen(),
+            routes: {
+              '/login': (_) => const LoginScreen(),
+              '/dashboard': (_) => const DashboardScreen(),
+              '/transaksi': (_) => const TransaksiMenuScreen(),
+              '/shift': (_) => const ShiftScreen(),
+              '/laporan': (_) => const LaporanScreen(),
+              '/master': (_) => const MasterScreen(),
+              '/profile': (_) => const ProfileScreen(),
+            },
+          );
         },
       ),
     );

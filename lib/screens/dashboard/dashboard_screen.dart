@@ -35,17 +35,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _summary = await _dashService.getSummary();
 
       final shiftData = await _dashService.getShiftSummary();
-      final ringkasanMap = shiftData['ringkasan'] as Map<String, dynamic>? ?? {};
+      final rawRingkasan = shiftData['ringkasan'];
+      final ringkasanMap = rawRingkasan is Map<String, dynamic> ? rawRingkasan : <String, dynamic>{};
       _ringkasan = {};
       ringkasanMap.forEach((k, v) {
-        _ringkasan[k] = RingkasanItem(
-          jenis: k,
-          count: v['count'] ?? 0,
-          totalRupiah: (v['total_rupiah'] ?? 0).toDouble(),
-        );
+        if (v is Map<String, dynamic>) {
+          _ringkasan[k] = RingkasanItem(
+            jenis: k,
+            count: (v['count'] is num) ? (v['count'] as num).toInt() : 0,
+            totalRupiah: (v['total_rupiah'] is num) ? (v['total_rupiah'] as num).toDouble() : 0,
+          );
+        }
       });
-      final stockList = shiftData['stock'] as List? ?? [];
-      _stock = stockList.map((e) => StockItem.fromJson(e)).toList();
+      final rawStock = shiftData['stock'];
+      final stockList = rawStock is List ? rawStock : [];
+      _stock = stockList
+          .where((e) => e is Map<String, dynamic>)
+          .map((e) => StockItem.fromJson(e as Map<String, dynamic>))
+          .toList();
 
       _rekening = await _dashService.getRekeningSummary();
     } catch (e) {

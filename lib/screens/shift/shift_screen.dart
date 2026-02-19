@@ -40,9 +40,10 @@ class _ShiftScreenState extends State<ShiftScreen> {
     setState(() => _loading = true);
     try {
       final resp = await _shiftService.getActiveShift();
-      _activeShiftData = resp['shift'];
-      final ring = resp['ringkasan'] as Map<String, dynamic>? ?? {};
-      _ringkasan = ring;
+      final rawShift = resp['shift'];
+      _activeShiftData = rawShift is Map<String, dynamic> ? rawShift : null;
+      final rawRing = resp['ringkasan'];
+      _ringkasan = rawRing is Map<String, dynamic> ? rawRing : {};
 
       _shiftConfigs = await _shiftService.getShiftConfig();
       try {
@@ -171,13 +172,15 @@ class _ShiftScreenState extends State<ShiftScreen> {
         if (_ringkasan.isNotEmpty) ...[
           Text('Ringkasan Transaksi', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          ..._ringkasan.entries.map((e) {
+          ..._ringkasan.entries.where((e) => e.value is Map<String, dynamic>).map((e) {
             final v = e.value as Map<String, dynamic>;
+            final count = (v['count'] is num) ? v['count'] : 0;
+            final total = (v['total_rupiah'] is num) ? (v['total_rupiah'] as num).toDouble() : 0.0;
             return Card(
               child: ListTile(
                 title: Text(e.key.replaceAll('_', ' ')),
-                subtitle: Text('${v['count'] ?? 0} transaksi'),
-                trailing: Text(formatRupiah((v['total_rupiah'] ?? 0).toDouble()),
+                subtitle: Text('$count transaksi'),
+                trailing: Text(formatRupiah(total),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             );

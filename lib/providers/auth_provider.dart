@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
@@ -10,6 +11,11 @@ class AuthProvider extends ChangeNotifier {
   User? _user;
   bool _loading = false;
   String? _error;
+  Timer? _sessionTimer;
+
+  static const _sessionTimeout = Duration(hours: 12);
+
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   User? get user => _user;
   bool get loading => _loading;
@@ -17,11 +23,33 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
   String get role => _user?.role ?? '';
 
+  AuthProvider() {
+    _apiClient.onSessionExpired = _handleSessionExpired;
+  }
+
+  void _handleSessionExpired() {
+    _user = null;
+    _error = null;
+    _sessionTimer?.cancel();
+    notifyListeners();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (_) => false);
+  }
+
+  void _resetSessionTimer() {
+    _sessionTimer?.cancel();
+    _sessionTimer = Timer(_sessionTimeout, () {
+      _handleSessionExpired();
+    });
+  }
+
+  void resetActivityTimer() => _resetSessionTimer();
+
   Future<bool> tryAutoLogin() async {
     await _apiClient.loadTokens();
     if (!_apiClient.isLoggedIn) return false;
     try {
       _user = await _authService.getMe();
+      _resetSessionTimer();
       notifyListeners();
       return true;
     } catch (_) {
@@ -29,6 +57,7 @@ class AuthProvider extends ChangeNotifier {
       if (refreshed) {
         try {
           _user = await _authService.getMe();
+          _resetSessionTimer();
           notifyListeners();
           return true;
         } catch (_) {}
@@ -46,6 +75,7 @@ class AuthProvider extends ChangeNotifier {
       final result = await _authService.login(uid, password, role: role);
       _user = result.user;
       _loading = false;
+      _resetSessionTimer();
       notifyListeners();
       return true;
     } catch (e) {
@@ -57,6 +87,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _sessionTimer?.cancel();
     await _authService.logout();
     _user = null;
     _error = null;
@@ -66,5 +97,11 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _sessionTimer?.cancel();
+    super.dispose();
   }
 }

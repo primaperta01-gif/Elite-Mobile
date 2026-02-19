@@ -16,14 +16,17 @@ class DashboardSummary {
   });
 
   factory DashboardSummary.fromJson(Map<String, dynamic> json) {
-    final user = json['user'] ?? {};
+    final rawUser = json['user'];
+    final user = rawUser is Map<String, dynamic> ? rawUser : <String, dynamic>{};
+    final rawActive = json['active_shift'];
+    final rawCurrent = json['current_shift'];
     return DashboardSummary(
-      appName: json['app_name'] ?? '',
-      userId: user['id'] ?? 0,
-      userName: user['nama'] ?? '',
-      userRole: user['role'] ?? '',
-      activeShift: json['active_shift'],
-      currentShift: json['current_shift'],
+      appName: json['app_name']?.toString() ?? '',
+      userId: (user['id'] is num) ? (user['id'] as num).toInt() : 0,
+      userName: user['nama']?.toString() ?? '',
+      userRole: user['role']?.toString() ?? '',
+      activeShift: rawActive is Map<String, dynamic> ? rawActive : null,
+      currentShift: rawCurrent is Map<String, dynamic> ? rawCurrent : null,
     );
   }
 

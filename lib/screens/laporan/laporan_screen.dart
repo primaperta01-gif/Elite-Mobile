@@ -103,7 +103,7 @@ class _ShiftGroupsTabState extends State<_ShiftGroupsTab> {
                 color: isOpen ? AppTheme.successColor : Colors.grey,
               ),
               title: Text('Shift ${g['shift_number'] ?? '-'}'),
-              subtitle: Text('${g['waktu_buka'] ?? ''}\n${(g['admin_names'] as List?)?.join(', ') ?? ''}'),
+              subtitle: Text('${g['waktu_buka'] ?? ''}\n${(g['admin_names'] is List ? (g['admin_names'] as List).join(', ') : '')}'),
               isThreeLine: true,
               trailing: Chip(
                 label: Text(status, style: TextStyle(color: isOpen ? Colors.white : null, fontSize: 11)),
@@ -128,7 +128,8 @@ class _ShiftGroupsTabState extends State<_ShiftGroupsTab> {
       final data = await _service.getShiftGroupDetail(shiftKey);
       if (mounted) Navigator.pop(context);
       if (!mounted) return;
-      final ringkasan = data['ringkasan'] as Map<String, dynamic>? ?? {};
+      final rawRingkasan = data['ringkasan'];
+      final ringkasan = rawRingkasan is Map<String, dynamic> ? rawRingkasan : <String, dynamic>{};
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -143,12 +144,14 @@ class _ShiftGroupsTabState extends State<_ShiftGroupsTab> {
               Text('Detail Shift $shiftKey',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              ...ringkasan.entries.map((e) {
+              ...ringkasan.entries.where((e) => e.value is Map<String, dynamic>).map((e) {
                 final v = e.value as Map<String, dynamic>;
+                final count = (v['count'] is num) ? v['count'] : 0;
+                final total = (v['total_rupiah'] is num) ? (v['total_rupiah'] as num).toDouble() : 0.0;
                 return ListTile(
                   title: Text(e.key.replaceAll('_', ' ')),
-                  subtitle: Text('${v['count'] ?? 0} transaksi'),
-                  trailing: Text(formatRupiah((v['total_rupiah'] ?? 0).toDouble()),
+                  subtitle: Text('$count transaksi'),
+                  trailing: Text(formatRupiah(total),
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                 );
               }),
